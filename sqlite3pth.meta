@@ -1,0 +1,11 @@
+;; -*- mode: Scheme; -*-
+((category ui)
+ (license "BSD")
+ (author "Jörg F. Wittenberger")
+ (synopsis "Run SQLite queries asynchronously in pthreads.  Supports calling Scheme from SQLite's VFS to supply database block storage.")
+ (needs pthreads srfi-34 llrb-tree)
+ ;(doc-from-wiki)
+ (files "sqlite3pth.scm" "sqlite3pth.setup" "sqlite3pth.meta"
+	)
+ )
+ 
