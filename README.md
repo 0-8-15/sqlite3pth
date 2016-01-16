@@ -25,7 +25,7 @@ databases.)
    (Sorry for this.  For this.  I can not rely on system installed
    sqlite but must be sure to have the exact version.  Otherwise the
    hashes of the resulting database content will not match and
-   replication break.)
+   replication break. Patches for this are very welcome.)
 
 * API is not perfect.
 
