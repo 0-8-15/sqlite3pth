@@ -88,6 +88,47 @@ TBD.
       "askemos"
       (make-block-handler block-table)))
 
+# VFS API
+
+`make-vfs SELF BLOCKSIZE TOTALSIZE READ WRITE TRUNCATE! CLOSE` --> VFSFILE
+
+    (: make-vfs
+       (forall
+        (a)
+        (procedure
+         (a
+          (procedure (a) fixnum)		       ;; block-size
+          (procedure (a) fixnum)		       ;; total-size
+          (procedure (a pointer fixnum fixnum) symbol) ;; read
+          (procedure (a pointer fixnum fixnum) symbol) ;; write
+          (procedure (a fixnum) fixnum)		       ;; truncate!
+          (procedure (a) *)                            ;; close
+          )
+         :sqlite3-vfs:)))
+
+Creates a VFSFILE object suitable as third argument (second optional arg) to
+`sqlite3-open-restricted` and `sqlite3-open-restricted-ro`.
+
+`SELF`: opaque handle being passed as initial argument to vfs-methods.
+
+`BLOCKSIZE`: Returns block size for `VFSFILE`.
+
+`TOTALSIZE`: Returns size of the sqlite3 database.
+
+`READ`: Procedure of four arguments: VFSFILE, target pointer, number of
+bytes to supply, offset in virtual file.
+
+`WRITE`: Procedure of 4 arguments: VFSFILE, source pointer, number of
+bytes to write to backing store, offset in virtual file.
+
+`TRUNCATE!`: Truncates VFSFILE file given as first argument at
+position given as second argument.
+
+`CLOSE`: Closes VFSFILE.
+
+# VFS Examples
+
+TDB.
 
 # Author
 
