@@ -17,10 +17,10 @@ databases.)
 * Automatic installation fails.  Try something like:
 
         $ chicken-install -r sqlite3pth
-	$ cd sqlite3pth
-	# set BUILT_SQLITE3=/path/to/sqlite3 build directory from successful sqlite3 build
-	$ ln -s $BUILT_SQLITE3 sqlite # BUILT_SQLITE3
-	$ chicken-install
+        $ cd sqlite3pth
+        # set BUILT_SQLITE3=/path/to/sqlite3 build directory from successful sqlite3 build
+        $ ln -s $BUILT_SQLITE3 sqlite # BUILT_SQLITE3
+        $ chicken-install
 
    (Sorry for this.  For this.  I can not rely on system installed
    sqlite but must be sure to have the exact version.  Otherwise the
