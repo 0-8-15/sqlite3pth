@@ -84,9 +84,9 @@ TBD.
     ;; Simplyfied example from ball.askemos.org.
     (define (sqlite3-open-ro/f_b frame block-table)
      (sqlite3-open-restricted-ro
-      "unused for debug only"
-     "askemos"
-     (make-block-handler block-table)))
+      (literal (aggregate-entity frame)) ;; a string, data base name for sqlite3
+      "askemos"
+      (make-block-handler block-table)))
 
 
 # Author
