@@ -2,7 +2,7 @@
 
 ;; TODO: integrate with http://www.chust.org/fossils/dbi/index
 
-(use srfi-1 srfi-34 pthreads)
+(use srfi-1 srfi-34 pthreads llrb-tree)
 (declare
  (fixnum)
  (usual-integrations)
