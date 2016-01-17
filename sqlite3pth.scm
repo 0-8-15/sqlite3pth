@@ -998,7 +998,8 @@ EOF
   sqlite3-open sqlite3-close
   sqlite3-open-restricted
   make-sqlite3-statement
-
+  ;;
+  make-vfs
   ;;
   sqlite3-bugworkaround-reset-restrictions
   ;; debug aid
@@ -1555,7 +1556,7 @@ EOF
 			rc
 			(list 'close (sqlite3-database-name db) (sqlite3-error-message/raw raw)))))))))))
 
-(: sqlite3-interrupt! ((struct <sqlite3-database>) -> boolean))
+(: sqlite3-interrupt! ((struct <sqlite3-database>) -> * #;boolean))
 (define (sqlite3-interrupt! db)
   (and-let* ((raw (sqlite3-database-raw-pointer db)))
 	    ((foreign-lambda* void ((<raw-sqlite3-database> a)) "sqlite3_interrupt(a->cnx);") raw)))
@@ -2008,8 +2009,6 @@ EOF
 	       #f))))
       (apply fail fail-args)))
 
-(define sqlite3-vfs-handler #f)
-
 (define-foreign-variable CB_IO_TYPE_BLKSZ int "CB_IO_TYPE_BLKSZ")
 (define-foreign-variable CB_IO_TYPE_FSIZE int "CB_IO_TYPE_FSIZE")
 (define-foreign-variable CB_IO_TYPE_READ int "CB_IO_TYPE_READ")
@@ -2032,6 +2031,41 @@ EOF
 
 (define set-cba-offset!
   (foreign-lambda* void ((<sqlite3-callback-args> arg) (integer off)) "arg->offset = off;"))
+
+(define-type :sqlite3-return: symbol)
+(define-type :sqlite3-vfs:
+  (forall
+   (a)
+   (vector
+    a
+    (procedure (a) fixnum)			   ;; block-size
+    (procedure (a) fixnum)			   ;; total-size
+    (procedure (a pointer fixnum fixnum) :sqlite3-return:)   ;; read
+    (procedure (a pointer fixnum fixnum) :sqlite3-return:)   ;; write
+    (procedure (a fixnum) fixnum)		   ;; truncate!
+    (procedure (a) *)				   ;; close
+    )))
+(: make-vfs
+   (forall
+    (a)
+    (procedure
+     (a
+      (procedure (a) fixnum)			   ;; block-size
+      (procedure (a) fixnum)			   ;; total-size
+      (procedure (a pointer fixnum fixnum) :sqlite3-return:) ;; read
+      (procedure (a pointer fixnum fixnum) :sqlite3-return:) ;; write
+      (procedure (a fixnum) fixnum)		   ;; truncate!
+      (procedure (a) *)				   ;; close
+      )
+     :sqlite3-vfs:)))
+(define (make-vfs self block-size total-size read write truncate! close)
+  (vector
+   self
+   block-size total-size
+   read
+   write
+   truncate!
+   close))
 
 (define (callback-wrapper arg)
   (guard
