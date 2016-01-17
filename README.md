@@ -79,14 +79,8 @@ TBD.
 
     (define db (sqlite-open "path"))
     (sqlite3-exec db "select 1") ; 1
-    (sqlite3-exec db (sqlite3-prepare andavari-db "select ?1") 1) ; 1
+    (sqlite3-exec db (sqlite3-prepare db "select ?1") 1) ; 1
 
-    ;; Simplyfied example from ball.askemos.org.
-    (define (sqlite3-open-ro/f_b frame block-table)
-     (sqlite3-open-restricted-ro
-      (literal (aggregate-entity frame)) ;; a string, data base name for sqlite3
-      "askemos"
-      (make-block-handler block-table)))
 
 # VFS API
 
