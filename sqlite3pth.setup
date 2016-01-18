@@ -1,10 +1,25 @@
 ;; -*-Scheme-*-
 
-(compile -s -O3 -d2 -J -emit-type-file "sqlite3pth.types" "sqlite3pth.scm" "sqlite/sqlite3.o" -L "-pthread")
-(compile -c -O3 "sqlite3pth.scm" "sqlite/sqlite3.o" -unit sqlite3pth -L "-pthread")
+;; Optional arguments to chicken-install
+;; -D system-lib ;; use system lib (NotYetImplemented)
+
+;; Options are pulled from (extra-features), i.e. the -D option to chicken-install.
+(define force-system-lib? (memq 'system-lib (extra-features)))
+
+(define sqlite3-options
+  '(-C -DSQLITE_ENABLE_FTS3
+    -C -DSQLITE_ENABLE_FTS3_PARENTHESIS
+    ;; -C -DSQLITE_THREADSAFE=0                ;; otherwise, pthreads required
+    ))
+
+(compile -s -O3 -d2 "sqlite3pth.scm" -j sqlite3pth
+           -Isqlite sqlite/sqlite3.c
+           ,@sqlite3-options
+	   -L "-pthread")
+
 (compile -s -O2 -d0 "sqlite3pth.import.scm")
 
 (install-extension
  'sqlite3pth
  '("sqlite3pth.so" "sqlite3pth.import.so" "sqlite3pth.types")
- '((version "0.2.1")))
+ '((version "0.2.2")))

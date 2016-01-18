@@ -14,20 +14,16 @@ databases.)
   case of problems please try
   [mine](http://askemos.org/chicken-eggs/index.html).
 
-* Automatic installation fails.  Try something like:
+* Does not use pre-installed sqlite3 (yet).
 
-        $ chicken-install -r sqlite3pth
-        $ cd sqlite3pth
-        # set BUILT_SQLITE3=/path/to/sqlite3 build directory from successful sqlite3 build
-        $ ln -s $BUILT_SQLITE3 sqlite # BUILT_SQLITE3
-        $ chicken-install
-
-   (Sorry for this.  For this.  I can not rely on system installed
+   Sorry for this.  For this.  I can not rely on system installed
    sqlite but must be sure to have the exact version.  Otherwise the
    hashes of the resulting database content will not match and
-   replication break. Patches for this are very welcome.)
+   replication break. Patches for this are very welcome.
 
-* API is not perfect.
+* API is not perfect.  Always wanted this to be stream-based.
+  Economic constraints where to blame.  `sql-ref` is *deprecated*
+  since it does not sit well with a stream based API.
 
 # Requirements
 
@@ -138,22 +134,22 @@ position given as second argument.
     (define-values (vfsfile backing-store)
       (let* ((bsz 4096)
 	     (fszmx (* bsz 8))
-	     (store (make-string fszmx #\x0))
-	     (fsz 0))
+	     (store (cons 0 (make-string fszmx #\x0))))
+	(define fsz car) (define fsz! set-car!) (define fbuf cdr)
 	(values
 	 (make-vfs
 	  store
 	  (lambda (_) bsz)
-	  (lambda (_) fsz)
-	  (lambda (_ to n off) ;; read
-	    (move-memory! store to n off 0)
-	    (if (< fsz (+ n off)) 'SQLITE_IOERR_SHORT_READ 'SQLITE_OK))
-	  (lambda (_ from n off) ;; write
-	    (set! fsz (max fsz (+ n off)))
-	    (move-memory! from store n 0 off)
+	  (lambda (store) (fsz store))
+	  (lambda (store to n off) ;; read
+	    (move-memory! (fbuf store) to n off 0)
+	    (if (< (fsz store) (+ n off)) 'SQLITE_IOERR_SHORT_READ 'SQLITE_OK))
+	  (lambda (store from n off) ;; write
+	    (fsz! store (max (fsz store) (+ n off)))
+	    (move-memory! from (fbuf store) n 0 off)
 	    'SQLITE_OK)
-	  (lambda (n) (set! fsz (min fsz n)) 'SQLITE_OK)
-	  (lambda (_) #t))
+	  (lambda (store n) (fsz! store (min (fsz store) n)) 'SQLITE_OK)
+	  (lambda (store) #t))
 	 store)))
     #;3> (define db
       (sqlite3-open-restricted
