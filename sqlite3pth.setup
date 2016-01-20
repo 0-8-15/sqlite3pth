@@ -13,13 +13,14 @@
     ))
 
 (compile -s -O3 -d2 "sqlite3pth.scm" -j sqlite3pth
-           -Isqlite sqlite/sqlite3.c
-           ,@sqlite3-options
-	   -L "-pthread")
+	 -emit-type-file "sqlite3pth.types"
+	 -Isqlite sqlite/sqlite3.c
+	 ,@sqlite3-options
+	 -L "-pthread")
 
 (compile -s -O2 -d0 "sqlite3pth.import.scm")
 
 (install-extension
  'sqlite3pth
  '("sqlite3pth.so" "sqlite3pth.import.so" "sqlite3pth.types")
- '((version "0.2.2")))
+ '((version "0.2.3")))
