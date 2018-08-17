@@ -6,4 +6,5 @@
 *.build.sh
 *.install.sh
 *.link
+*.o
 salmonella.log
