@@ -23,4 +23,4 @@
 (install-extension
  'sqlite3pth
  '("sqlite3pth.so" "sqlite3pth.import.so" "sqlite3pth.types")
- '((version "0.2.3")))
+ '((version "0.2.4")))

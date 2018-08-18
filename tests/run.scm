@@ -1,4 +1,10 @@
-(use sqlite3pth lolevel)
+(cond-expand
+ (chicken-4
+  (use sqlite3pth lolevel)
+  (import chicken))
+ (else
+  (import sqlite3pth)
+  (import (chicken memory))))
 
 ;; Backing-store is a string of 8x4096 bytes only.
 (define-values (vfsfile backing-store)

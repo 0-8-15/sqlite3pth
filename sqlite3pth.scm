@@ -2,7 +2,6 @@
 
 ;; TODO: integrate with http://www.chust.org/fossils/dbi/index
 
-(use srfi-1 srfi-34 pthreads llrb-tree)
 (declare
  (fixnum)
  (usual-integrations)
@@ -1006,11 +1005,30 @@ EOF
   sqlite3-debug-statements
   )
 
-(import scheme foreign
-	chicken ;; (except chicken add1 sub1 with-exception-handler condition?)
-	(except srfi-18 raise) srfi-34
-	srfi-1 extras #;pthreads)
+(import scheme)
+(cond-expand
+ (chicken-4
+  (import scheme foreign
+	  chicken ;; (except chicken add1 sub1 with-exception-handler condition?)
+	  (except srfi-18 raise)
+	  srfi-1 extras)
+  (use srfi-1 srfi-34 pthreads llrb-tree))
+ (else
+  (import
+   (chicken base)
+   (chicken type)
+   (chicken foreign)
+   (chicken blob)
+   (chicken fixnum)
+   (chicken flonum)
+   (chicken format)
+   (except srfi-18 raise) srfi-34
+   (only srfi-1 reverse!)
+   (only (chicken time) current-milliseconds)
+   (only miscmacros ensure)
+   pthreads)))
 ;; (import util shrdprmtr)
+(import (prefix llrb-tree llrb:))
 (import (prefix llrb-string-table string-))
 
 #;(define-syntax with-mutex
@@ -1203,9 +1221,9 @@ EOF
    db query
    (lambda (result rows cols)
      (if (eqv? rows 0)
-         (apply values (append! seeds (setup-seeds result rows cols)))
+         (apply values (append seeds (setup-seeds result rows cols)))
          (let ((cols (range cols)))
-           (let loop ((seeds (append! seeds (setup-seeds result rows cols)))
+           (let loop ((seeds (append seeds (setup-seeds result rows cols)))
                       (row 0))
              (if (eqv? row rows)
                  (apply values seeds)
