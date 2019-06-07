@@ -1066,7 +1066,7 @@ EOF
   (if (sql-null? o) o (not o)))
 
 ;;(include "typedefs.scm")
-(define-type :sql-result: vector)
+(define-type |:sql-result:| vector)
 
 ;; (define sqlite3-debug-statements (make-shared-parameter #f))
 
@@ -1160,19 +1160,19 @@ EOF
 
 ;; WARNING: sql-index, sql-field and sql-value are experimental.
 
-(: sql-index (:sql-result: string --> (or false fixnum)))
+(: sql-index (|:sql-result:| string --> (or false fixnum)))
 (define (sql-index self field)
   (and (fx> (vector-length self) 0)
        (vassoc field (vector-ref self 0))))
 
-(: sqlite3-field (:sql-result: fixnum --> string))
+(: sqlite3-field (|:sql-result:| fixnum --> string))
 (define (sqlite3-field self field)
   (let* ((cv (vector-ref self 0))
 	 (cn (vector-length cv)))
     (if (fx>= field cn) (error (format "sql-field column ~a out of range [0,~a)" field cn)))
     (vector-ref cv field)))
 
-(: sqlite3-value (:sql-result: fixnum (or fixnum string symbol) --> *))
+(: sqlite3-value (|:sql-result:| fixnum (or fixnum string symbol) --> *))
 (define (sqlite3-value self row field)
   (let ((rn (vector-length self))
 	(ri (add1 row)))
@@ -1190,7 +1190,7 @@ EOF
 	(vector-ref rv ci)))))
 
 (: sql-ref
-   (:sql-result: (or boolean fixnum) (or boolean fixnum string symbol) --> *))
+   (|:sql-result:| (or boolean fixnum) (or boolean fixnum string symbol) --> *))
 (define (sql-ref self row field)
   (if (not (sql-result? self)) (error (format "sql-ref not a sql result ~a" self)))
   (cond
@@ -1199,7 +1199,7 @@ EOF
    (row (vector-length (vector-ref self 0)))
    (else (sub1 (vector-length self)))))
 
-(: sql-fold (:sql-result: (procedure ((procedure (fixnum) *) *) *) * -> *))
+(: sql-fold (|:sql-result:| (procedure ((procedure (fixnum) *) *) *) * -> *))
 (define sql-fold
   (letrec ((loop (lambda (kons knil len result i)
                    (if (eqv? i len)
@@ -1947,7 +1947,7 @@ EOF
 ;; This addition thread may or may be not required.  TODO: split into
 ;; two versions.
 
-(: sqlite3-exec ((struct <sqlite3-database>) (or string (struct <sqlite3-statement>)) #!rest -> :sql-result:))
+(: sqlite3-exec ((struct <sqlite3-database>) (or string (struct <sqlite3-statement>)) #!rest -> |:sql-result:|))
 (define (sqlite3-exec db stmt . args)
   (define (cleanup! db)
    (and-let* ((p (sqlite3-database-open-statements db)))
@@ -1972,8 +1972,8 @@ EOF
 
 (: sqlite3-call-with-transaction
    ((struct <sqlite3-database>)
-    (procedure ((procedure (string #!rest) :sql-result:)) :sql-result:)
-    -> :sql-result:))
+    (procedure ((procedure (string #!rest) |:sql-result:|)) |:sql-result:|)
+    -> |:sql-result:|))
 (define (sqlite3-call-with-transaction db proc)
   (guard
    (ex (else
@@ -2050,16 +2050,16 @@ EOF
 (define set-cba-offset!
   (foreign-lambda* void ((<sqlite3-callback-args> arg) (integer off)) "arg->offset = off;"))
 
-(define-type :sqlite3-return: symbol)
-(define-type :sqlite3-vfs:
+(define-type |:sqlite3-return:| symbol)
+(define-type |:sqlite3-vfs:|
   (forall
    (a)
    (vector
     a
     (procedure (a) fixnum)			   ;; block-size
     (procedure (a) fixnum)			   ;; total-size
-    (procedure (a pointer fixnum fixnum) :sqlite3-return:)   ;; read
-    (procedure (a pointer fixnum fixnum) :sqlite3-return:)   ;; write
+    (procedure (a pointer fixnum fixnum) |:sqlite3-return:|)   ;; read
+    (procedure (a pointer fixnum fixnum) |:sqlite3-return:|)   ;; write
     (procedure (a fixnum) fixnum)		   ;; truncate!
     (procedure (a) *)				   ;; close
     )))
@@ -2070,12 +2070,12 @@ EOF
      (a
       (procedure (a) fixnum)			   ;; block-size
       (procedure (a) fixnum)			   ;; total-size
-      (procedure (a pointer fixnum fixnum) :sqlite3-return:) ;; read
-      (procedure (a pointer fixnum fixnum) :sqlite3-return:) ;; write
+      (procedure (a pointer fixnum fixnum) |:sqlite3-return:|) ;; read
+      (procedure (a pointer fixnum fixnum) |:sqlite3-return:|) ;; write
       (procedure (a fixnum) fixnum)		   ;; truncate!
       (procedure (a) *)				   ;; close
       )
-     :sqlite3-vfs:)))
+     |:sqlite3-vfs:|)))
 (define (make-vfs self block-size total-size read write truncate! close)
   (vector
    self
