@@ -3,7 +3,7 @@
  (license "BSD")
  (author "Jörg F. Wittenberger")
  (synopsis "Run SQLite queries asynchronously in pthreads.  Supports calling Scheme from SQLite's VFS to supply database block storage.")
- (version "0.2.4")
+ (version "0.2.5")
  (dependencies pthreads srfi-34 llrb-tree miscmacros srfi-1)
  ;(doc-from-wiki)
  (components
