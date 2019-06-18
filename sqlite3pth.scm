@@ -1,4 +1,4 @@
-;; (C) 2008, 2010, 2015 Jörg F. Wittenberger -*-Scheme-*-
+;; (C) 2008, 2010, 2015, 2019 Jörg F. Wittenberger -*-Scheme-*-
 
 ;; TODO: integrate with http://www.chust.org/fossils/dbi/index
 
@@ -258,10 +258,17 @@ void lock_callback_open_parameters(struct callback_args * x)
   pthread_mutex_unlock(&the_shared_memory_mux);
 }
 
-void unlock_callback_open_parameters()
+void unlock_callback_open_parameters(struct callback_args * x)
 {
-  the_shared_memory_for_open = NULL;
-  pthread_cond_signal(&the_shared_memory_cond);
+#ifdef TRACE
+  fprintf(stderr, "unlock_callback_open_parameters %p\n", the_shared_memory_for_open);
+#endif
+  if( x != NULL && x == the_shared_memory_for_open) {
+    pthread_mutex_lock(&the_shared_memory_mux);
+    the_shared_memory_for_open = NULL;
+    pthread_mutex_unlock(&the_shared_memory_mux);
+    pthread_cond_signal(&the_shared_memory_cond);
+  }
 }
 
 typedef int (*C_pthread_request_function_t)(void *);
@@ -299,7 +306,7 @@ pthread_sqlite3_open(void *data)
   int rc;
 
 #ifdef TRACE
-fprintf(stderr, "DB %s vfs %s SM %p\n", a->dbn, a->vfs, a->sm);
+fprintf(stderr, "DB %s vfs %s SM %p mode %s\n", a->dbn, a->vfs, a->sm, a->setup == 3 ? "SQLITE_OPEN_READONLY" : "SQLITE_OPEN_CREATE");
 #endif
 
   if(a->sm != NULL) {
@@ -312,10 +319,20 @@ fprintf(stderr, "DB %s vfs %s SM %p\n", a->dbn, a->vfs, a->sm);
 			  ( SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE ) )
                         | SQLITE_OPEN_NOMUTEX,
 			a->vfs);
-  /* unlock_callback_open_parameters(); done within open ASAP */
-  sqlite3_setup(a->cnx, a->setup);
-
-  return SQLITE_OK;
+  /* unlock_callback_open_parameters(a->sm); done within open ASAP */
+  if( rc == SQLITE_OK) {
+    sqlite3_setup(a->cnx, a->setup);
+    return SQLITE_OK;
+  } else {
+#ifdef TRACE
+fprintf(stderr, "open failed DB %s vfs %s SM %p code %d %s: %s\n", a->dbn, a->vfs, a->sm, rc, sqlite3_errmsg(a->cnx), strerror(sqlite3_system_errno(a->cnx)));
+#endif
+    /* Open failed, and callback did not unlock parameters. */
+    unlock_callback_open_parameters(a->sm);
+    return rc;
+  }
+  /* Supposed unreached case.  Should we assert? */
+  return SQLITE_MISUSE;
 }
 
 struct sqlite3_db {
@@ -532,7 +549,7 @@ static int callbackOpen(
     p->ioMethods = &callback_io_methods;
     p->zName = zName;
     p->sm = the_shared_memory_for_open;
-    unlock_callback_open_parameters();
+    unlock_callback_open_parameters(the_shared_memory_for_open);
     return SQLITE_OK;
   } else if (flags & SQLITE_OPEN_MAIN_JOURNAL) {
     p->ioMethods = &callback_io_noop_methods;
@@ -594,7 +611,11 @@ static int call_callback(callback_file *cf)
   } while ( !(ret & CB_OP_RETURN) );
   a->op = 0;
   pthread_mutex_unlock(&a->mux);
-  return ret >> 2;
+  ret >>= CB_OP_SHIFT;
+#ifdef TRACE
+  fprintf(stderr, "CB ret %p %d\n", cf, ret);
+#endif
+  return ret;
 #ifdef CHECK_PROTOCOL
   }
 #endif
@@ -816,11 +837,12 @@ static int callbackAccess(
   int *pResOut
 )
 {
-  int rc = pVfs->xAccess(pVfs, zPath, flags, pResOut);
+  // This VFS does not use `zPath` at all, no reason to return anything but success.
+  *pResOut = 0;
 #ifdef TRACE
   fprintf(stderr, "A access %s want %d got %d\n", zPath, flags, *pResOut);
 #endif
-  return rc;
+  return SQLITE_OK;
 }
 
 /*
@@ -834,10 +856,12 @@ static int callbackFullPathname(
   int nOut, 
   char *zOut
 ){
+  // This VFS does not use `zPath` at all, we simply copy the input.
+  C_strncpy(zOut, zPath, nOut);
 #ifdef TRACE
   fprintf(stderr, "cb fpn %s\n", zPath);
 #endif
-  return pVfs->xFullPathname(pVfs, zPath, nOut, zOut);
+  return SQLITE_OK;
 }
 
 /*
@@ -939,10 +963,21 @@ static void ac_config_sqlite3() {
   }}
 }
 
+#ifdef TRACE
+static
+void sqlite3logfn(void *id, int err, const char* msg)
+{
+  const char *tag = id;
+  fprintf(stderr, "%s %s\n", id, msg);
+}
+#endif
+
 static
 sqlite3_vfs *callback_sqlite3_vfs_init(void *cb, void *cbr) {
   /* ac_config_sqlite3(); */
 #ifdef TRACE
+  if(sqlite3_config(SQLITE_CONFIG_LOG, sqlite3logfn, "SQLite Log: ") != SQLITE_OK)
+    fprintf(stderr, "SQLITE3 config LOG failed.\n");
   fprintf(stderr, "regring %s \n", callback_vfs.zName);
 #endif
   pthread_mutex_init(&the_shared_memory_mux, NULL);
