@@ -7,10 +7,12 @@
  (dependencies pthreads srfi-34 llrb-tree miscmacros srfi-1)
  ;(doc-from-wiki)
  (components
+  (c-object sqlite3 (source "sqlite/sqlite3.c"))
   (extension
    sqlite3pth
+   (objects sqlite3)
    (types-file)
-   (csc-options "-O3" "-lfa2" "-d2" "-Isqlite" "sqlite/sqlite3.c"
+   (csc-options "-O3" "-lfa2" "-d2" "-Isqlite"
 		"-C" "-DSQLITE_ENABLE_FTS3"
 		"-C" "-DSQLITE_ENABLE_FTS3_PARENTHESIS"
 		)))
